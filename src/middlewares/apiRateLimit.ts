@@ -1,19 +1,18 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import requestIp from "request-ip";
-import { createClient } from "redis";
+import {
+  client,
+  checkNumberOfCalls,
+  createAndUpdateRecord,
+} from "../utils/redis";
+import getCurrentTime from "../utils/getCurrentTime";
 import { apiRateLimits, RateLimitType } from "./apiLimitConfig";
 
-const client = createClient({
-  password: process.env.REDIS_PASSWORD,
-  socket: {
-    host: process.env.REDIS_URL,
-    port: 19355,
-  },
-});
-
-client.on("error", (err) => console.log("Redis Client Error", err));
-
-export default async (req: Request, res: Response, next: Function) => {
+export const apiRateLimit = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const route = req.originalUrl.slice(1);
   const clientIp = requestIp.getClientIp(req);
   if (!clientIp || !checkPathHasLimits(route)) {
@@ -24,7 +23,7 @@ export default async (req: Request, res: Response, next: Function) => {
     const { rate, time } = getRateLimit(route, authStatus);
     const recordKey = `${route}:${clientIp}:${authStatus}`;
     const totalCalls = await checkNumberOfCalls(recordKey);
-    const currentTime = new Date().getTime() / 1000;
+    const currentTime = getCurrentTime();
     const currentCalls = totalCalls.filter((call) => {
       return Number(call) > currentTime - time;
     });
@@ -34,7 +33,7 @@ export default async (req: Request, res: Response, next: Function) => {
       next();
     } else {
       await client.quit();
-      res.status(429).send("Too many request");
+      res.status(429).send("Too many requests");
     }
   }
 };
@@ -54,13 +53,4 @@ const authStatusCheck = (header: any): string => {
 };
 const getRateLimit = (path: string, authStatus: string): RateLimitType => {
   return apiRateLimits[path][authStatus];
-};
-
-const checkNumberOfCalls = async (key: string) => {
-  const result = await client.sMembers(key);
-  return result;
-};
-
-const createAndUpdateRecord = async (key: string, timeStamp: string) => {
-  const result = await client.SADD(key, timeStamp);
 };

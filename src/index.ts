@@ -1,6 +1,6 @@
 import express from "express";
 import "dotenv/config";
-import apiRateLimit from "../middlewares/apiRateLimit";
+import { apiRateLimit } from "./middlewares/apiRateLimit";
 import { articlesRoute, contactsRoute, homeRoute } from "../routes/routes";
 
 const app = express();
