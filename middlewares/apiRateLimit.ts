@@ -6,7 +6,7 @@ import { apiRateLimits, RateLimitType } from "./apiLimitConfig";
 const client = createClient({
   password: process.env.REDIS_PASSWORD,
   socket: {
-    host: "redis-19355.c51.ap-southeast-2-1.ec2.cloud.redislabs.com",
+    host: process.env.REDIS_URL,
     port: 19355,
   },
 });
