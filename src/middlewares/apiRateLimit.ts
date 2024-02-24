@@ -11,28 +11,32 @@ export const apiRateLimit = async (
   res: Response,
   next: NextFunction
 ) => {
-  const route = req.originalUrl.slice(1);
-  const clientIp = req.ip;
-  if (!clientIp || !checkPathHasLimits(route)) {
-    next();
-  } else {
-    await client.connect();
-    const authStatus = authStatusCheck(req.headers);
-    const { rate, time } = getRateLimit(route, authStatus);
-    const recordKey = `${route}:${clientIp}:${authStatus}`;
-    const { currentTime, numberOfCalls } = await checkNumberOfCalls(
-      recordKey,
-      time
-    );
-
-    if (numberOfCalls < rate) {
-      createAndUpdateRecord(recordKey, currentTime.toString());
-      await client.quit();
+  try {
+    const route = req.originalUrl.slice(1);
+    const clientIp = req.ip;
+    if (!clientIp || !checkPathHasLimits(route)) {
       next();
     } else {
-      await client.quit();
-      res.sendStatus(429);
+      await client.connect();
+      const authStatus = authStatusCheck(req.headers);
+      const { rate, time } = getRateLimit(route, authStatus);
+      const recordKey = `${route}:${clientIp}:${authStatus}`;
+      const { currentTime, numberOfCalls } = await checkNumberOfCalls(
+        recordKey,
+        time
+      );
+
+      if (numberOfCalls < rate) {
+        createAndUpdateRecord(recordKey, currentTime.toString());
+        await client.quit();
+        next();
+      } else {
+        await client.quit();
+        res.sendStatus(429);
+      }
     }
+  } catch (error) {
+    next(error);
   }
 };
 

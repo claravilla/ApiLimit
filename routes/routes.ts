@@ -6,18 +6,16 @@ export const contactsRoute = Router();
 
 homeRoute.get("/", (req: Request, res: Response) => {
   res.send(
-    "Knave clipper tackle gally furl galleon avast squiffy yardarm careen"
+    "Mr and Mrs Dursley, of number four, Privet Drive, were proud to say that they were perfectly normal, thank you very much."
   );
 });
 
 articlesRoute.get("/", (req: Request, res: Response) => {
   res.send(
-    "Bowsprit snow port bilge rat mizzenmast gangplank belay lass rutters tackle. Landlubber or just lubber cog lad interloper boatswain holystone sheet barque aft Sail ho"
+    "Japanese has no grammatical gender, number, or articles; though the demonstrative sono (その, 'that, those'), is often translatable as 'the'"
   );
 });
 
 contactsRoute.get("/", (req: Request, res: Response) => {
-  res.send(
-    "Measured fer yer chains man-of-war sloop mutiny Cat o'nine tails square-rigged strike colors nipperkin Blimey log"
-  );
+  res.send("Help me, Obi-Wan Kenobi. You're My Only Hope");
 });
