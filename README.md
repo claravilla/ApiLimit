@@ -18,10 +18,12 @@ Everytime there is a call to the server the following checks are performed:
 - does this route have rate limit?
 - if so, how many calls from this address, with this authentication status, to this endpoints have been made?
 
-Based on that, the server returs a response or a 429.
+Based on that, the server returns a response or a 429.
 
 The number of calls is stored in Redis, using data type Set. The timestamp is recorded in Epoch time in seconds.
 To avoid filling up Redis with meaningless data, everytime a query is performed, records with a timestamp older than the timeframe are deleted.
+
+The Api limits are stored in a config file. The numbers are low to enable manual testing.
 
 ### Built with
 

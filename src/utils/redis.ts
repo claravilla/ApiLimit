@@ -17,9 +17,11 @@ export const checkNumberOfCalls = async (key: string, time: number) => {
     return Number(call) < currentTime - time;
   });
   if (oldCalls.length > 0) {
-    oldCalls.forEach(async (call) => {
-      await client.sRem(key, call);
-    });
+    await Promise.all(
+      oldCalls.map(async (call) => {
+        await client.sRem(key, call);
+      })
+    );
   }
   const currentCalls = totalCalls.filter((call) => {
     return Number(call) > currentTime - time;
