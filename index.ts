@@ -1,7 +1,7 @@
 import express from "express";
 import "dotenv/config";
-import { apiRateLimit } from "./middlewares/apiRateLimit";
-import { articlesRoute, contactsRoute, homeRoute } from "../routes/routes";
+import { apiRateLimit } from "./src/middlewares/apiRateLimit";
+import { articlesRoute, contactsRoute, homeRoute } from "./src/routes/routes";
 
 const app = express();
 const port = process.env.PORT || 3000;
