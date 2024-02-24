@@ -1,3 +1,7 @@
+/**
+ * @time expressed in seconds
+ */
+
 export interface RateLimitType {
   rate: number;
   time: number;
@@ -12,11 +16,11 @@ interface apiLimitConfigType {
 export const apiRateLimits: apiLimitConfigType = {
   home: {
     anonymous: {
-      rate: 4,
+      rate: 5,
       time: 60,
     },
     authenticated: {
-      rate: 6,
+      rate: 10,
       time: 60,
     },
   },

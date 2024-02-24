@@ -10,9 +10,25 @@ export const client = createClient({
 
 client.on("error", (err) => console.log("Redis Client Error", err));
 
-export const checkNumberOfCalls = async (key: string) => {
-  const result = await client.sMembers(key);
-  return result;
+export const checkNumberOfCalls = async (key: string, time: number) => {
+  const totalCalls = await client.sMembers(key);
+  const currentTime = new Date().getTime() / 1000;
+  const oldCalls = totalCalls.filter((call) => {
+    return Number(call) < currentTime - time;
+  });
+  if (oldCalls.length > 0) {
+    oldCalls.forEach(async (call) => {
+      await client.sRem(key, call);
+    });
+  }
+  const currentCalls = totalCalls.filter((call) => {
+    return Number(call) > currentTime - time;
+  });
+
+  return {
+    numberOfCalls: currentCalls.length,
+    currentTime,
+  };
 };
 
 export const createAndUpdateRecord = async (key: string, timeStamp: string) => {

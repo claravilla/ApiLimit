@@ -1,12 +1,9 @@
 import { NextFunction, Request, Response } from "express";
+import "dotenv/config";
 import { apiRateLimit } from "../middlewares/apiRateLimit";
-import {
-  client,
-  checkNumberOfCalls,
-  createAndUpdateRecord,
-} from "../utils/redis";
+import { checkNumberOfCalls, createAndUpdateRecord } from "../utils/redis";
 
-jest.mock("../middlewares/redisUtil");
+jest.mock("../utils/redis");
 
 const checkNumberOfCallsMock = checkNumberOfCalls as jest.Mock;
 const createAndUpdateRecordMock = createAndUpdateRecord as jest.Mock;
@@ -14,40 +11,138 @@ const createAndUpdateRecordMock = createAndUpdateRecord as jest.Mock;
 describe("Test api rate limit middleware", () => {
   let testReq: Partial<Request>;
   let testRes: Partial<Response>;
-  let next: NextFunction = jest.fn();
+  let testNext: NextFunction = jest.fn();
 
   beforeEach(() => {
     testReq = {};
     testRes = {
-      json: jest.fn(),
+      sendStatus: jest.fn(),
     };
+    jest.clearAllMocks();
   });
 
-  it("should not block anonymous calls to the home url when the configured limit is not reached", async () => {});
-
-  it("should not block authenticated calls to the home url when the configured limit is not reached", async () => {});
-
-  it.only("should block anonymous calls to the home url when the configured limit is reached", async () => {
-    const testReq = {
+  it("should not block anonymous calls to the home url when the configured limit is not reached", async () => {
+    testReq = {
+      headers: {},
       originalUrl: "/home",
+      ip: "127.1.0.0",
     };
 
-    const expectedRes = {
-      status: 429,
-      message: "Too many request",
+    checkNumberOfCallsMock.mockResolvedValueOnce({
+      numberOfCalls: 2,
+      currentTime: 1708736687,
+    });
+
+    await apiRateLimit(testReq as Request, testRes as Response, testNext);
+
+    expect(createAndUpdateRecordMock).toHaveBeenNthCalledWith(
+      1,
+      "home:127.1.0.0:anonymous",
+      "1708736687"
+    );
+    expect(testNext).toHaveBeenCalledTimes(1);
+  });
+
+  it("should not block authenticated calls to the home url when the configured limit is not reached", async () => {
+    testReq = {
+      headers: {
+        "x-api-key": process.env.API_KEY,
+      },
+      originalUrl: "/home",
+      ip: "127.1.0.0",
     };
 
-    checkNumberOfCallsMock.mockResolvedValueOnce([]);
+    checkNumberOfCallsMock.mockResolvedValueOnce({
+      numberOfCalls: 6,
+      currentTime: 1708736687,
+    });
 
-    await apiRateLimit(testReq as Request, testRes as Response, next);
+    await apiRateLimit(testReq as Request, testRes as Response, testNext);
+
+    expect(createAndUpdateRecordMock).toHaveBeenNthCalledWith(
+      1,
+      "home:127.1.0.0:authenticated",
+      "1708736687"
+    );
+    expect(testNext).toHaveBeenCalledTimes(1);
+  });
+
+  it("should block anonymous calls to the home url when the configured limit is reached", async () => {
+    testReq = {
+      headers: {},
+      originalUrl: "/home",
+      ip: "127.1.0.0",
+    };
+
+    checkNumberOfCallsMock.mockResolvedValueOnce({
+      numberOfCalls: 7,
+      currentTime: 1708736687,
+    });
+
+    await apiRateLimit(testReq as Request, testRes as Response, testNext);
 
     expect(createAndUpdateRecordMock).toHaveBeenCalledTimes(0);
-    expect(testRes.json).toHaveBeenCalledWith(expectedRes);
+    expect(testRes.sendStatus).toHaveBeenCalledWith(429);
   });
 
-  it("should block authenticated calls to the home url when the configured limit is reached", async () => {});
+  it("should block authenticated calls to the home url when the configured limit is reached", async () => {
+    testReq = {
+      headers: {
+        "x-api-key": process.env.API_KEY,
+      },
+      originalUrl: "/home",
+      ip: "127.1.0.0",
+    };
 
-  it("should block authenticated calls with the wrong API key to the home url when the configured limit for anonymous is reached", async () => {});
+    checkNumberOfCallsMock.mockResolvedValueOnce({
+      numberOfCalls: 11,
+      currentTime: 1708736687,
+    });
 
-  it("should not block calls to the contacts url", async () => {});
+    await apiRateLimit(testReq as Request, testRes as Response, testNext);
+
+    expect(createAndUpdateRecordMock).toHaveBeenCalledTimes(0);
+    expect(testRes.sendStatus).toHaveBeenCalledWith(429);
+  });
+
+  it("should block authenticated calls with the wrong API key to the home url when the configured limit for anonymous is reached", async () => {
+    testReq = {
+      headers: {
+        "x-api-key": '"wrong key',
+      },
+      originalUrl: "/home",
+      ip: "127.1.0.0",
+    };
+
+    checkNumberOfCallsMock.mockResolvedValueOnce({
+      numberOfCalls: 7,
+      currentTime: 1708736687,
+    });
+
+    await apiRateLimit(testReq as Request, testRes as Response, testNext);
+
+    expect(createAndUpdateRecordMock).toHaveBeenCalledTimes(0);
+    expect(testRes.sendStatus).toHaveBeenCalledWith(429);
+  });
+
+  it("should not checks calls to the contacts url", async () => {
+    testReq = {
+      headers: {},
+      originalUrl: "/contacts",
+      ip: "127.1.0.0",
+    };
+    await apiRateLimit(testReq as Request, testRes as Response, testNext);
+    expect(checkNumberOfCallsMock).toHaveBeenCalledTimes(0);
+    expect(testNext).toHaveBeenCalledTimes(1);
+  });
+
+  it("should not checks calls if there is no IP address in the request", async () => {
+    testReq = {
+      headers: {},
+      originalUrl: "/home",
+    };
+    await apiRateLimit(testReq as Request, testRes as Response, testNext);
+    expect(checkNumberOfCallsMock).toHaveBeenCalledTimes(0);
+    expect(testNext).toHaveBeenCalledTimes(1);
+  });
 });
