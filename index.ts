@@ -8,7 +8,7 @@ const port = process.env.PORT || 3000;
 
 app.use("/home", apiRateLimit, homeRoute);
 app.use("/articles", apiRateLimit, articlesRoute);
-app.use("/contacts", apiRateLimit, contactsRoute);
+app.use("/contacts", contactsRoute);
 
 app.listen(port, () => {
   console.log(`Server is listening on Port ${port}`);
