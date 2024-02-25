@@ -13,7 +13,7 @@ Basic Express Node.js app with a middleware to enforces rate limiting on API req
 ### How the middleware works
 
 There is a rate limit based on endpoint and authentication with an API key.
-The limit is based on IP, authentication status and endpoints.
+The limit is based on IP, authentication status and endpoints. If the request passes the wrong API key the call is considered as anonymous.
 Every time there is a call to the server the following checks are performed:
 
 - is there an IP address?
